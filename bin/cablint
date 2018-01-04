@@ -13,25 +13,147 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 require 'certlint'
+require 'pg'
 
-ARGV.each do |file|
-  fn = File.basename(file)
-  raw = File.read(file)
+#conn = PG.connect(:host => 'localhost', :dbname => 'ct2', :user => 'postgres', :password => 'postgres')
+#res  = conn.exec('SELECT cert from cert')
 
-  if raw.include? '-BEGIN CERTIFICATE-'
-    m, der = CertLint::PEMLint.lint(raw, 'CERTIFICATE')
-  else
+#counter = 0
+#limit  = 10000
+#offset = 0
+
+start = Integer(ARGV[0])
+step = Integer(ARGV[1])
+#puts start
+#puts step
+next_step = start + step
+
+#while start < 70307482 do
+  conn = PG.connect(:host => 'localhost', :port => 7777, :dbname => 'ct2', :user => 'postgres', :password => 'postgres')
+  conn.send_query("SELECT id, cert_hash, cert FROM cablint_all where id > #{start} and id <= #{next_step}")
+  conn.set_single_row_mode
+  records = conn.get_result
+  #puts ">>>#{next_step}"
+  
+  #start  += step
+  #next_step += step
+  
+    records.stream_each do |row|
+    # do something with the received row of the first query
+    raw = row['cert']
+    cert_hash = row['cert_hash']
+    id = row['id']
+    #puts "#{r['cert']}"
     m  = []
-    der = raw
-  end
-
-  m += CertLint::CABLint.lint(der)
-  m.each do |msg|
+    der = PG::Connection.unescape_bytea(raw)
+#       puts row['cert_hash']
     begin
-      puts "#{msg}\t#{fn}"
-    rescue Encoding::UndefinedConversionError
-      print msg
-      puts "\t#{fn}"
+        m += CertLint::CABLint.lint(der)
+    rescue => ex
+        #puts "#{ex.backtrace}"
+	#puts "#{ex}\n\n\n"
+        #puts raw
     end
+    #puts "success"
+
+    m.each do |msg|
+      begin
+        puts cert_hash + "#{msg}"
+#	puts msg
+#       puts row['cert_hash']
+      rescue Encoding::UndefinedConversionError
+        print msg
+        puts "\t#{fn}"
+#       puts row['cert_hash']
+      end
+  end 
+
+    
+    #counter += 1
+    #if counter % 1000 == 0
+    #    puts ">>> #{counter}"
+    #end
+    #row.clear()
+    #GC.start()
+
   end
-end
+  records.clear()
+
+#end
+
+    #raw = row['cert']
+    #puts "#{r['cert']}"
+    #m  = []
+    #der = PG::Connection.unescape_bytea(raw)
+
+    #begin
+    #    m += CertLint::CABLint.lint(der)
+    #rescue => ex
+    #    puts "#{ex}"
+    #end
+#
+ #   m.each do |msg|
+  #    begin
+   #     puts "#{msg}"
+   #   rescue Encoding::UndefinedConversionError
+   #     print msg
+   #     puts "\t#{fn}"
+   #   end
+   # end
+   # 
+   # m = []
+   # counter += 1
+   # if counter % 1000 == 0
+   #     puts ">>> #{counter}"
+   # end
+#end
+
+
+#counter = 0
+#res.each do |r|
+#raw = r['cert']
+#puts "#{r['cert']}"
+#    m  = []
+#    der = PG::Connection.unescape_bytea(raw)
+
+#  begin
+#      m += CertLint::CABLint.lint(der) 
+#  rescue => ex
+#      puts "#{ex}"
+#  end
+#  m.each do |msg|
+#    begin
+#      puts "#{msg}"
+#    rescue Encoding::UndefinedConversionError
+#      print msg
+#      puts "\t#{fn}"
+#    end
+#  end
+#counter += 1
+#if counter % 1000 == 0
+#  puts ">>> #{counter}"
+#end
+
+#end
+
+#ARGV.each do |file|
+#  fn = File.basename(file)
+#  raw = File.read(file)
+#
+#  if raw.include? '-BEGIN CERTIFICATE-'
+#    m, der = CertLint::PEMLint.lint(raw, 'CERTIFICATE')
+#  else
+#    m  = []
+#    der = raw
+#  end
+#
+#  m += CertLint::CABLint.lint(der)
+#  m.each do |msg|
+#    begin
+#      puts "#{msg}"
+#    rescue Encoding::UndefinedConversionError
+#      print msg
+#      puts "\t#{fn}"
+#    end
+#  end
+#end
