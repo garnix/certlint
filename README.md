@@ -11,6 +11,7 @@ For now, execute by running:
 
 * `public_suffix`
 * `simpleidn`
+* `pg` (UNIX systems require the libpq-dev package to be installed)
 
 If using less than Ruby 2.3, you also need the `unf` gem.
 
