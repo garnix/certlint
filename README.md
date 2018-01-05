@@ -5,7 +5,7 @@ X.509 certificate linter
 
 For now, execute by running:
 
-`ruby -I lib:ext bin/certlint` or `ruby -I lib:ext bin/cablint`
+./starter.sh
 
 ## Required gems
 
